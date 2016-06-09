@@ -1,0 +1,1 @@
+#define IDB_BITMAP1 2000

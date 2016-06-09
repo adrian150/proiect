@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
+#include "Header.h"
 
 HINSTANCE _hInstance;
 int _nCmdShow;
@@ -8,7 +9,7 @@ HWND _hwnd;
 MSG msg;
 
 //Pentru desenare
-HDC hDC;
+HDC hDC, MemDCExercising;
 PAINTSTRUCT Ps;
 HFONT font;
 LOGFONT LogFont;
@@ -19,6 +20,14 @@ void Paint_MAINWND() {
 	HPEN hLinePen;
 	COLORREF qLineColor;
 	HBITMAP bmpExercising;
+
+	bmpExercising = LoadBitmap(_hInstance, MAKEINTRESOURCE(IDB_BITMAP1)); //incarcam imaginea
+	MemDCExercising = CreateCompatibleDC(hDC);
+	SelectObject(MemDCExercising, bmpExercising);
+	BitBlt(hDC, 0, 0, 818, 650, MemDCExercising, 0, 0, SRCCOPY); //afisam imaginea
+
+	DeleteDC(MemDCExercising);
+	DeleteObject(bmpExercising);
 
 	qLineColor = RGB(196, 77, 31);  //maro pt linii
 	hLinePen = CreatePen(PS_SOLID, 8, qLineColor); //linie continua, de grosime 8 pixeli
