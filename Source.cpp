@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
@@ -7,12 +8,105 @@ HINSTANCE _hInstance;
 int _nCmdShow;
 HWND _hwnd;
 MSG msg;
+HWND _sursa, _destinatia;
+HWND sursa1, sursa2;
 
 //Pentru desenare
 HDC hDC, MemDCExercising;
 PAINTSTRUCT Ps;
 HFONT font;
 LOGFONT LogFont;
+
+struct Legaturi_Orase {
+	int x_in, y_in;   //coordonatele nodului sursa
+	int x_out, y_out; //coordonatele nodului destinatie
+	int sursa, destinatia;
+};
+Legaturi_Orase muchii[10];
+
+//Pentru Dijktra
+int calea[11], k = 0, k2 = 0;
+int graf_orase[9][9];
+void getPath(int *parent, int j)
+{
+	if (parent[j] == -1)
+		return;
+	else if (parent[j] == INT_MIN)
+	{
+		MessageBox(_hwnd, "Nu exita nici un calea intre cele 2 puncte!", "Error", MB_ICONERROR);
+		return;
+	}
+
+	getPath(parent, parent[j]);
+	calea[k++] = j;
+	k2++;
+}
+
+void dijkstra(int graph[9][9], int src, int dest, int nodes)
+{
+	int *dist = (int*)malloc(sizeof(int)*nodes);
+	bool *sptSet = (bool*)malloc(sizeof(bool)*nodes);
+	int *parent = (int*)malloc(sizeof(int)*nodes);
+	for (int i = 0; i < nodes; i++)
+	{
+		parent[i] = INT_MIN;
+		dist[i] = INT_MAX;
+		sptSet[i] = false;
+	}
+	parent[src] = -1;
+	dist[src] = 0;
+
+	for (int count = 0; count < nodes - 1; count++)
+	{
+		int u;
+		int min = INT_MAX, min_index;
+		for (int v = 0; v < nodes; v++)
+			if (sptSet[v] == false && dist[v] <= min)
+				min = dist[v], min_index = v;
+		u = min_index;
+		sptSet[u] = true;
+
+		for (int v = 0; v < nodes; v++)
+			if (!sptSet[v] && graph[u][v] && dist[u] + graph[u][v] < dist[v])
+			{
+				parent[v] = u;
+				dist[v] = dist[u] + graph[u][v];
+			}
+	}
+	if (dist[dest] != INT_MAX)
+	{
+		if (dest != src)
+		{
+			calea[k++] = src;
+			k2++;
+			getPath(parent, dest);
+		}
+	}
+	else
+	{
+		MessageBox(_hwnd, "Nu exista calea!", "Error", MB_ICONERROR);
+	}
+}
+
+void Initializare_Cautare(int src, int dest)
+{
+	for (int i = 0; i < 9; i++)
+		for (int j = 0; j < 9; j++)
+			graf_orase[i][j] = 0;
+
+	graf_orase[0][1] = graf_orase[1][0] = 147;
+	graf_orase[0][4] = graf_orase[4][0] = 133;
+	graf_orase[1][2] = graf_orase[2][1] = 105;
+	graf_orase[1][5] = graf_orase[5][1] = 213;
+	graf_orase[2][3] = graf_orase[3][2] = 117;
+	graf_orase[2][6] = graf_orase[6][2] = 223;
+	graf_orase[3][7] = graf_orase[7][3] = 198;
+	graf_orase[4][5] = graf_orase[5][4] = 97;
+	graf_orase[5][8] = graf_orase[8][5] = 267;
+	graf_orase[6][7] = graf_orase[7][6] = 119;
+
+	dijkstra(graf_orase, src, dest, 9);
+}
 
 void Paint_MAINWND() {
 	hDC = BeginPaint(_hwnd, &Ps); //incepem sa pictam in fereastra principala
@@ -48,15 +142,286 @@ void Paint_MAINWND() {
 	SelectObject(hDC, font);
 	SetTextColor(hDC, qLineColor);
 	TextOut(hDC, 825, 0, "Dijkstra", 8); //scriem dijkstra sus in dreptul liniei maro
+
+	LogFont.lfUnderline = 0;
+	LogFont.lfHeight = 27;
+	qLineColor = RGB(77, 109, 204);
+	font = CreateFontIndirect(&LogFont);
+	SelectObject(hDC, font);
+	SetTextColor(hDC, qLineColor);
+	TextOut(hDC, 825, 200, "Alege 2 municipii:", 18); //18-lungime text
+	DeleteObject(font);
+
+	HBRUSH NewBrush = CreateSolidBrush(RGB(45, 102, 194));
+	SelectObject(hDC, NewBrush);
+	Rectangle(hDC, 850, 260, 1170, 350);
+}
+
+void Draw_Buttons(HWND hwnd)
+{
+	CreateWindowW(L"static", L"Oras Sursa:", WS_CHILD | WS_VISIBLE, 880, 270, 100, 25, hwnd, (HMENU)1, NULL, NULL);
+	_sursa = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE, 1000, 270, 150, 25, hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
+	CreateWindowW(L"static", L"Oras Dest.:", WS_CHILD | WS_VISIBLE, 880, 315, 100, 25, hwnd, (HMENU)1, NULL, NULL);
+	_destinatia = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE, 1000, 315, 150, 25, hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
+	CreateWindow("BUTTON", "Calculeaza", WS_BORDER | WS_CHILD | WS_VISIBLE, 905, 60, 220, 30, hwnd, (HMENU)IDC_CALC, _hInstance, NULL);
+	CreateWindow("BUTTON", "Resetare Desen", WS_BORDER | WS_CHILD | WS_VISIBLE, 905, 100, 220, 30, hwnd, (HMENU)IDC_RESET, _hInstance, NULL);
+}
+
+int convert_date(char *text) {
+
+	//Scoatem spatiile
+	int i, j;
+	char *output = text;
+	for (i = 0, j = 0; i<strlen(text); i++, j++)
+	{
+		if (text[i] != ' ')
+			output[j] = text[i];
+		else
+			j--;
+	}
+	output[j] = 0;
+	//facem toate literele mici
+	for (int i = 0; output[i]; i++) {
+		output[i] = tolower(output[i]);
+	}
+	//verificam nodurile si returnam cate o cifra pentru fiecare oras daca a fost gasit
+	if (strcmp(output, "targujiu") == 0)
+	{
+		return 8;
+	}
+	else if (strcmp(output, "braila") == 0)
+	{
+		return 7;
+	}
+	else if (strcmp(output, "brasov") == 0)
+	{
+		return 6;
+	}
+	else if (strcmp(output, "albaiulia") == 0)
+	{
+		return 5;
+	}
+	else if (strcmp(output, "cluj") == 0)
+	{
+		return 4;
+	}
+	else if (strcmp(output, "iasi") == 0)
+	{
+		return 3;
+	}
+	else if (strcmp(output, "suceava") == 0)
+	{
+		return 2;
+	}
+	else if (strcmp(output, "bistrita") == 0)
+	{
+		return 1;
+	}
+	else if (strcmp(output, "satumare") == 0)
+	{
+		return 0;
+	}
+	return -1;
+}
+
+char* nume_oras(int id_oras) {
+	if (id_oras == 0)
+	{
+		return "Satu Mare";
+	}
+	else if (id_oras == 1)
+	{
+		return "Bistrita";
+	}
+	else if (id_oras == 2)
+	{
+		return "Suceava";
+	}
+	else if (id_oras == 3)
+	{
+		return "Iasi";
+	}
+	else if (id_oras == 4)
+	{
+		return "Cluj";
+	}
+	else if (id_oras == 5)
+	{
+		return "Alba Iulia";
+	}
+	else if (id_oras == 6)
+	{
+		return "Brasov";
+	}
+	else if (id_oras == 7)
+	{
+		return "Braila";
+	}
+	else if (id_oras == 8)
+	{
+		return "Targu Jiu";
+	}
+}
+
+void Initializare_Noduri() {
+	//pozitiile pe ecran pentru fiecare muchie
+	muchii[0].destinatia = 0;
+	muchii[0].sursa = 1;
+	muchii[0].x_in = 222 - 9;
+	muchii[0].y_in = 150 - 38;
+	muchii[0].x_out = 318 - 9;
+	muchii[0].y_out = 181 - 38;
+
+	muchii[1].destinatia = 1;
+	muchii[1].sursa = 2;
+	muchii[1].x_in = 424 - 9;
+	muchii[1].y_in = 180 - 38;
+	muchii[1].x_out = 519 - 9;
+	muchii[1].y_out = 250 - 38;
+
+	muchii[2].destinatia = 2;
+	muchii[2].sursa = 3;
+	muchii[2].x_in = 613 - 9;
+	muchii[2].y_in = 258 - 38;
+	muchii[2].x_out = 677 - 9;
+	muchii[2].y_out = 313 - 38;
+
+	muchii[3].destinatia = 0;
+	muchii[3].sursa = 4;
+	muchii[3].x_in = 151 - 9;
+	muchii[3].y_in = 182 - 38;
+	muchii[3].x_out = 127 - 9;
+	muchii[3].y_out = 261 - 38;
+
+	muchii[4].destinatia = 1;
+	muchii[4].sursa = 5;
+	muchii[4].x_in = 359 - 9;
+	muchii[4].y_in = 240 - 38;
+	muchii[4].x_out = 307 - 9;
+	muchii[4].y_out = 381 - 38;
+
+	muchii[5].destinatia = 2;
+	muchii[5].sursa = 6;
+	muchii[5].x_in = 541 - 9;
+	muchii[5].y_in = 309 - 38;
+	muchii[5].x_out = 527 - 9;
+	muchii[5].y_out = 437 - 38;
+
+	muchii[6].destinatia = 3;
+	muchii[6].sursa = 7;
+	muchii[6].x_in = 725 - 9;
+	muchii[6].y_in = 357 - 38;
+	muchii[6].x_out = 699 - 9;
+	muchii[6].y_out = 506 - 38;
+
+	muchii[7].destinatia = 4;
+	muchii[7].sursa = 5;
+	muchii[7].x_in = 115 - 9;
+	muchii[7].y_in = 317 - 38;
+	muchii[7].x_out = 208 - 9;
+	muchii[7].y_out = 386 - 38;
+
+	muchii[8].destinatia = 6;
+	muchii[8].sursa = 7;
+	muchii[8].x_in = 515 - 9;
+	muchii[8].y_in = 485 - 38;
+	muchii[8].x_out = 590 - 9;
+	muchii[8].y_out = 526 - 38;
+
+	muchii[9].destinatia = 5;
+	muchii[9].sursa = 8;
+	muchii[9].x_in = 288 - 9;
+	muchii[9].y_in = 435 - 38;
+	muchii[9].x_out = 335 - 9;
+	muchii[9].y_out = 562 - 38;
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	int surs;
+	int dest;
+
 	switch (msg) {
 
 	case WM_PAINT:
 		Paint_MAINWND();
 		break;
+
+	case WM_CREATE:
+		Draw_Buttons(hwnd);
+		break;
+
+	case WM_COMMAND:
+	{
+		switch (LOWORD(wParam))
+		{
+		case IDC_CALC:
+		{
+			bool okk = false;
+			char buf1[30], buf2[30];
+			//salvam sursa si destinatia in buf1 si buf2
+			SendMessage(_sursa, WM_GETTEXT, sizeof(buf1) / sizeof(char), reinterpret_cast<LPARAM>(buf1));
+			SendMessage(_destinatia, WM_GETTEXT, sizeof(buf2) / sizeof(char), reinterpret_cast<LPARAM>(buf2));
+
+			//resetam casutele pentru sursa si destinatie
+			DestroyWindow(_sursa);
+			DestroyWindow(_destinatia);
+			_sursa = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE, 1000, 270, 150, 25, hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
+			_destinatia = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE, 1000, 315, 150, 25, hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
+
+			if (convert_date(buf1) != -1 && convert_date(buf2) != -1)
+			{
+				surs = convert_date(buf1);
+				dest = convert_date(buf2);
+				okk = true;
+			}
+			else
+			{
+				MessageBoxW(hwnd, L"Orase invalide", L"Error", MB_ICONERROR);
+			}
+			if (okk)
+			{
+				Initializare_Cautare(surs, dest);
+				//calculam drumul
+				int sum = 0;
+				char sum_buff[101];
+				for (int i = 0; i < 99; i++)
+					sum_buff[i] = '\0';
+				for (int i = 0; i < k - 1; i++)
+					sum += graf_orase[calea[i]][calea[i + 1]];
+				//afisam costul total 
+				sprintf(sum_buff, "Costul total este de: %d", sum);
+
+				//traseul parcurs
+				char buff[3000], bufff[60];
+				for (int i = 0; i < 2999; i++)
+					buff[i] = '\0';
+				for (int i = 0; i < 60; i++)
+					bufff[i] = '\0';
+				strcpy(bufff, nume_oras(calea[0]));
+				sprintf(buff, "%s", bufff);
+				for (int i = 1; i < k; i++)
+				{
+					strcpy(bufff, nume_oras(calea[i]));
+					sprintf(buff, "%s  ->  %s", buff, bufff);
+				}
+				sursa1 = CreateWindow("static", buff, WS_CHILD | WS_VISIBLE, 850, 400, 350, 100, hwnd, (HMENU)1, NULL, NULL);
+				sursa2 = CreateWindow("static", sum_buff, WS_CHILD | WS_VISIBLE, 850, 500, 350, 100, hwnd, (HMENU)1, NULL, NULL);
+				k = 0;
+			}
+		}
+		break;
+		case IDC_RESET: //distrugem sursa si destinatia si le recreem ca sa redam aspectul initial al ferestrei
+			DestroyWindow(_sursa);
+			DestroyWindow(_destinatia);
+			_sursa = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE, 1000, 270, 150, 25, hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
+			_destinatia = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE, 1000, 315, 150, 25, hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
+			DestroyWindow(sursa1);
+			DestroyWindow(sursa2);
+			break;
+		}
+		break;
+	}
 
 	case WM_DESTROY:
 		PostQuitMessage(0);
