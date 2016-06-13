@@ -1,0 +1,16 @@
+Instructiuni:
+
+1. Introduceti numele oraselor intre care vreti sa aflati distanta si ruta minima in cele doua casete text
+
+Observatie: Daca introduceti alt nume decat cele prezentate in imaginea din stanga, veti primi un mesaj
+de eroare care va aduce la cunostinta faptul ca orasele sunt invalide.
+
+2. Daca cele doua nume de orase sunt valide, apasati pe butonul "Calculeaza"
+
+3. Sub cele doua casete text in care ati introdus orasele puteti observa ruta si costul total.
+
+4. Apasati pe butonul "Arata Drum" pentru a deschide o fereastra in care puteti observa imaginea initiala 
+cu ruta evidentiata pe ea.
+
+5. Apasati pe butonul "Resetare Desen" pentru a o lua de la capat si a introduce alte orase intre care doriti sa calculati ruta de distanta minima.
+
